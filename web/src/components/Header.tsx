@@ -21,13 +21,13 @@ interface HeaderProps {
 }
 
 function useCountUp(target: number, duration = 800) {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(target);
   useEffect(() => {
+    let raf = 0;
     if (target === 0) {
-      setValue(0);
-      return;
+      raf = requestAnimationFrame(() => setValue(0));
+      return () => cancelAnimationFrame(raf);
     }
-    let raf: number;
     const start = performance.now();
     const step = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);

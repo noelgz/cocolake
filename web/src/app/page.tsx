@@ -129,7 +129,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 export default function Home() {
   const [digest, setDigest] = useState<DailyDigest | null>(null);
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useState<Lang>(() => detectLang());
   const [activeCategory, setActiveCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -139,7 +139,6 @@ export default function Home() {
 
   /* First load! Get digest and dates at the same time */
   useEffect(() => {
-    setLang(detectLang());
     Promise.all([
       fetch(`${apiBase}/api/digests/latest`).then((r) =>
         r.ok ? (r.json() as Promise<IncomingDailyDigest>) : null,

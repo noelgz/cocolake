@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+web/node_modules/
+web/.next/
+web/out/
+.git/
+web/.git/
+.claude/
+web/.github/
+.DS_Store

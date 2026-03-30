@@ -1,0 +1,72 @@
+services:
+  # PostgreSQL lives here
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cocolake}
+      POSTGRES_USER: ${POSTGRES_USER:-cocolake}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cocolake}
+    ports:
+      - "${POSTGRES_EXPOSE_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cocolake} -d ${POSTGRES_DB:-cocolake}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # This one collects and saves the daily news
+  pipeline:
+    build:
+      context: .
+      dockerfile: pipeline/Dockerfile
+    env_file: .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-cocolake}
+      POSTGRES_USER: ${POSTGRES_USER:-cocolake}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cocolake}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./pipeline:/app/pipeline
+      - ./common:/app/common
+
+  # API for data from PostgreSQL
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    env_file: .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-cocolake}
+      POSTGRES_USER: ${POSTGRES_USER:-cocolake}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cocolake}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./api:/app/api
+      - ./pipeline:/app/pipeline
+      - ./common:/app/common
+
+  # Web app on http://localhost:3000
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
